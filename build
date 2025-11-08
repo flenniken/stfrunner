@@ -1,0 +1,104 @@
+#!/bin/bash
+
+# Build and test stfrunner.
+# Run with no arguments to see the available commands.
+
+projectDir="/home/coder/stfrunner"
+
+option=$1
+
+# Make sure we're running inside the docker container.
+if [[ -z "${coder_env}" ]]; then
+  echo "Run in the docker container not on the host."
+  exit
+fi
+
+# Make sure we are running in the project folder.
+if [[ ! $(pwd) == "$projectDir" ]]; then
+  echo "Run from the metar folder: $projectDir"
+  exit
+fi
+
+function buildCmd() {
+  # Build the debug and release versions of the project.
+
+  debugExe='bin/debian/debug/stfrunner'
+  rm $debugExe
+  nim c --out:$debugExe src/stfrunner
+
+  releaseExe='bin/debian/stfrunner'
+  rm $releaseExe
+  nim c -d:release --out:$releaseExe src/stfrunner
+
+  # Make sure the exes exists.
+  if [[ ! -e $debugExe ]]; then
+    echo "Error creating the debug exe: $debugExe"
+  else
+    echo "Created: $debugExe"
+  fi
+
+  if [[ ! -e $releaseExe ]]; then
+    echo "Error creating the release exe: $releaseExe"
+  else
+    echo "Created: $releaseExe"
+  fi
+
+  exit
+}
+
+function testCmd() {
+  # Test the debug and release versions of the project.
+
+  # Run each test file in the test folder.
+  for file in tests/test_*.nim; do
+    basename=$(basename $file)
+
+    debugCmd="nim c -f -d:nimDebugDlOpen --verbosity:0 -d:test --hints:off -r \
+      -p:src --out:bin/tests/$basename $file"
+    echo
+    echo $debugCmd
+    $debugCmd
+
+    releaseCmd="nim c -f -d:release -d:nimDebugDlOpen --verbosity:0 -d:test --hints:off -r \
+      -p:src --out:bin/tests/$basename $file"
+    echo
+    echo $releaseCmd
+    $releaseCmd
+  done
+
+  exit
+}
+
+# Define the stfrunner environment variable for use inside the stf files.
+stfrunner=/home/coder/stfrunner/bin/debian/stfrunner
+
+function testStf() {
+  # Run the stf tests.
+
+  cmd="$stfrunner -d=stf-files"
+  echo
+  echo $cmd
+  $cmd
+
+  exit
+}
+
+case $option in
+  b)
+    buildCmd
+    ;;
+  t)
+    testCmd
+    ;;
+  stf)
+    testStf
+    ;;
+  *)
+
+cat << EOF
+b         Build the debug and release versions of stfrunner.
+t         Test the debug and release versions of stfrunner.
+stf       Run the stf tests in the stf-files dir.
+EOF
+    ;;
+esac
