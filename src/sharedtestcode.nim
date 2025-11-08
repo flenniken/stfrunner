@@ -10,8 +10,6 @@ when defined(test):
   import args
   import linebuffer
   import comparelines
-  import parseCmdLine
-  import vartypes
 
   proc readXLines*(lb: var LineBuffer, maxLines: Natural = high(Natural)): seq[string] =
     ## Read lines from a LineBuffer returning line endings but don't
@@ -262,52 +260,3 @@ when defined(test):
     if matches.len == eLogLines.len:
       return true
     showLogLinesAndExpected(logLines, eLogLines, matches)
-
-
-
-  proc newLineParts*(
-      prefix: string = "<!--$",
-      command: string = "nextline",
-      codeStart: Natural = 0,
-      codeLen: Natural = 0,
-      commentLen: Natural = 0,
-      continuation: bool = false,
-      postfix: string = "-->",
-      ending: string = "\n",
-      lineNum: Natural = 1): LineParts =
-    ## Return a new LineParts object. The default is: <!--$ nextline -->\n.
-    result = LineParts(prefix: prefix, command: command,
-      codeStart: codeStart, codeLen: codeLen, commentLen: commentLen,
-      continuation: continuation, postfix: postfix,
-      ending: ending, lineNum: lineNum)
-
-  func newDummyFunctionSpec*(
-      functionName: string = "zero",
-      signatureCode: string = "i",
-      builtIn = false,
-      docComment = "## Return the number 0.\n",
-      filename = "test.nim",
-      lineNum = 0,
-      numLines = 3,
-      functionPtr: FunctionPtr = nil,
-      statements = newSeq[Statement]()
-    ): FunctionSpec =
-    # Create a function spec for testing.
-
-    func zero(variables: Variables, parameters: seq[Value]): FunResult =
-      result = newFunResult(newValue(0))
-    var functionPtrDefault: FunctionPtr
-    if functionPtr == nil:
-      functionPtrDefault = zero
-    else:
-      functionPtrDefault = functionPtr
-    let signatureO = newSignatureO(functionName, signatureCode)
-
-    var statementsList: seq[Statement]
-    if statementsList.len == 0:
-      statementsList.add(newStatement("return 0"))
-    else:
-      statementsList = statements
-    let builtIn = false
-    result = newFunc(builtIn, signatureO.get(), docComment, filename,
-      lineNum, numLines, statementsList, functionPtrDefault)

@@ -4,7 +4,6 @@ import std/strutils
 import std/os
 import opresult
 import std/unicode
-# import unicodes
 
 type
   OpResultStr*[T] = OpResult[T, string]

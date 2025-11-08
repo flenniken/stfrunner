@@ -9,7 +9,7 @@ suite "version.nim":
     check 1 == 1
 
   test "test version string":
-    let matchesO = matchVersion(staticteaVersion)
+    let matchesO = matchVersion(stfrunnerVersion)
     if not matchesO.isSome:
-      echo "Invalid StaticTea version number: " & staticteaVersion
+      echo "Invalid StaticTea version number: " & stfrunnerVersion
       fail

@@ -798,7 +798,7 @@ when not defined(test):
     if args.help:
       echo runnerHelp
     elif args.version:
-      echo stfrunnerVersion
+      echo version.stfrunnerVersion
     elif args.filename != "":
       result = runFilenameMain(args)
     elif args.directory != "":
