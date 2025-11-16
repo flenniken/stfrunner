@@ -1,8 +1,7 @@
 ## Types for handling command line arguments.
 
 import std/strformat
-import messages
-import opresult
+# import opresult
 import tables
 
 type
@@ -29,8 +28,8 @@ type
     resultFilename*: string
     logFilename*: string
 
-  ArgsOr* = OpResultWarn[Args]
-    ## The args or a warning.
+  # ArgsOr* = OpResultWarn[Args]
+  #   ## The args or a warning.
 
 proc makeUserPrepostTable*(prepostList: seq[Prepost]): PrepostTable =
   ## Return the user's ordered table that maps prefixes to
@@ -44,20 +43,20 @@ proc makeUserPrepostTable*(prepostList: seq[Prepost]): PrepostTable =
     assert prepost.prefix != ""
     result[prepost.prefix] = prepost.postfix
 
-func newArgsOr*(warningData: WarningData):
-     ArgsOr =
-  ## Return a new ArgsOr object containing a warning.
-  result = opMessageW[Args](warningData)
+# func newArgsOr*(warningData: WarningData):
+#      ArgsOr =
+#   ## Return a new ArgsOr object containing a warning.
+#   result = opMessageW[Args](warningData)
 
-func newArgsOr*(warning: MessageId, p1: string = "", pos = 0):
-     ArgsOr =
-  ## Return a new ArgsOr object containing a warning.
-  let warningData = newWarningData(warning, p1, pos)
-  result = opMessageW[Args](warningData)
+# func newArgsOr*(warning: MessageId, p1: string = "", pos = 0):
+#      ArgsOr =
+#   ## Return a new ArgsOr object containing a warning.
+#   let warningData = newWarningData(warning, p1, pos)
+#   result = opMessageW[Args](warningData)
 
-func newArgsOr*(args: Args): ArgsOr =
-  ## Return a new ArgsOr object containing args.
-  result = opValueW[Args](args)
+# func newArgsOr*(args: Args): ArgsOr =
+#   ## Return a new ArgsOr object containing args.
+#   result = opValueW[Args](args)
 
 func newPrepost*(prefix: string, postfix: string): Prepost =
   ## Create a new prepost object from the prefix and postfix.

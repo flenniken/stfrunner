@@ -2,8 +2,6 @@
 ## Option type but instead of returning nothing, you return a message
 ## that tells why you cannot return the value.
 
-import messages
-
 type
   OpResultKind* = enum
     ## The kind of OpResult object, either a message or a value.
@@ -18,54 +16,6 @@ type
         value*: T
       of orMessage:
         message*: T2
-
-  OpResultWarn*[T] = OpResult[T, WarningData]
-    ##
-    #$ OpResultWarn holds either a value or warning data.  It's similar to
-    #$ the Option type but instead of returning nothing, you return a
-    #$ warning that tells why you cannot return the value.
-    #$
-    #$ Example Usage:
-    #$
-    #$ ~~~ nim
-    #$ import opresult
-    #$
-    #$ proc get_string(): OpResultWarn[string] =
-    #$   if problem:
-    #$     result = opMessage[string](newWarningData(wUnknownArg))
-    #$   else:
-    #$     result = opValue[string]("string of char")
-    #$
-    #$ let strOr = get_string()
-    #$ if strOr.isMessage:
-    #$   echo strOr.message
-    #$ else:
-    #$   echo "value = " & $strOr.value
-    #$ ~~~
-
-  OpResultId*[T] = OpResult[T, MessageId]
-    ##
-    #$ OpResultId holds either a value or a message id.  It's similar to
-    #$ the Option type but instead of returning nothing, you return a
-    #$ message id that tells why you cannot return the value.
-    #$
-    #$ Example Usage:
-    #$
-    #$ ~~~ nim
-    #$ import opresult
-    #$
-    #$ proc get_string(): OpResultId[string] =
-    #$   if problem:
-    #$     result = opMessage[string](wUnknownArg)
-    #$   else:
-    #$     result = opValue[string]("string of char")
-    #$
-    #$ let strOr = get_string()
-    #$ if strOr.isMessage:
-    #$   echo show_message(strOr.message)
-    #$ else:
-    #$   echo "value = " & $strOr.value
-    #$ ~~~
 
 func isMessage*(opResult: OpResult): bool =
   ## Return true when the OpResult object contains a message.
@@ -84,18 +34,3 @@ func `$`*(opResult: OpResult): string =
   else:
     result = "Message: " & $opResult.message
 
-func opValueW*[T](value: T): OpResultWarn[T] =
-  ## Create a new OpResultWarn object containing a value T.
-  result = OpResult[T, WarningData](kind: orValue, value: value)
-
-func opMessageW*[T](message: WarningData): OpResultWarn[T] =
-  ## Create a new OpResultWarn object containing a warning.
-  result = OpResult[T, WarningData](kind: orMessage, message: message)
-
-func opValue*[T](value: T): OpResultId[T] =
-  ## Create a new OpResultId object containing a value T.
-  result = OpResult[T, MessageId](kind: orValue, value: value)
-
-func opMessage*[T](message: MessageId): OpResultId[T] =
-  ## Create a new OpResultId object containing a message id.
-  result = OpResult[T, MessageId](kind: orMessage, message: message)
