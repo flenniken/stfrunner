@@ -4,7 +4,7 @@
 # with no arguments to see the available commands.
 
 rootDir=$(pwd)
-dockerFolder=$rootDir/env/linux
+dockerFolder=$rootDir/env/debian
 dockerFile=$dockerFolder/Dockerfile
 
 dockerImage="stfrunner-image"
