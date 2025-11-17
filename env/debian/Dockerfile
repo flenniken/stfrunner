@@ -42,6 +42,6 @@ RUN cd Nim \
 # Install bashrc for the prompt and some aliases.
 COPY --chown=coder:coder bashrc .bashrc
 
-# Start in the metar directory.
-WORKDIR /home/coder/metar
+# Start in the project directory.
+WORKDIR /home/coder/stfrunner
 CMD ["/bin/bash"]

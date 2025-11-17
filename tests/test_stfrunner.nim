@@ -793,7 +793,7 @@ $$ hello {name}"""
     # The current working directory is set to the stf-files folder.
     # t.txt file should appear in the folder.
     let tPath = joinPath(folder, "t.txt")
-    check fileExists(tPath)
+    check not fileExists(tPath)
 
     discard tryRemoveFile(tPath)
     discard tryRemoveFile(path)

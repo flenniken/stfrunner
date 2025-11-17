@@ -49,6 +49,8 @@ function buildCmd() {
 function testCmd() {
   # Test the debug and release versions of the project.
 
+  failed=0
+
   # Run each test file in the test folder.
   for file in tests/test_*.nim; do
     basename=$(basename $file)
@@ -63,8 +65,27 @@ function testCmd() {
       -p:src --out:bin/tests/$basename $file"
     echo
     echo $releaseCmd
-    $releaseCmd
+    $releaseCmd 2>e.txt
+    rc=$?
+
+    echo
+    cat e.txt
+
+    if [[ $rc == 0 ]]; then
+      # echo "$rc: success"
+      :
+    else
+      echo "$rc: failed"
+      failed=1
+    fi
+
   done
+
+  if [[ $failed == 0 ]]; then
+    echo "Success"
+  else
+    echo "Failed: one or more tests failed."
+  fi
 
   exit
 }

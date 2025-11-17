@@ -49,6 +49,7 @@ function runMe() {
       ;;
     *exited*)
       echo "The $dockerContainer container exists but its not running, starting it."
+      echo "docker start -ai $dockerContainer"
       docker start -ai $dockerContainer
       ;;
     *)

@@ -25,6 +25,7 @@ else
   echo "Build Nim with:"
   echo "cd ~/Nim"
   echo "./build_all.sh"
+  echo "cd ~/stfrunner"
 fi
 
 
