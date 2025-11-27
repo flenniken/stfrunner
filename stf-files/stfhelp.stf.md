@@ -1,18 +1,26 @@
 stf file, version 0.1.0
 
-# stfrunner version number
+# stfrunner help message when nothing specified.
 
-### File cmd.sh command nonZeroReturn
-
-~~~
-$stfrunner >stdout 2>stderr
-~~~
-
-### File stdout.expected
+### File cmd.sh command
 
 ~~~
-Missing argments, use -h for help.
+$stfrunner -h >stdout 2>stderr
 ~~~
 
-### Expected stdout == stdout.expected
+### File check.help command
+
+~~~
+head -3 stdout > top
+~~~
+
+### File top.expected
+
+~~~
+# Stf Runner
+
+A program to test command line programs.
+~~~
+
+### Expected top == top.expected
 ### Expected stderr == empty

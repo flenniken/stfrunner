@@ -1,11 +1,10 @@
-## A standalone command to run Single Test File (stf) files.
+## A program to test command line programs.
 ##
-## You use runner for testing command line applications. A stf file
-## contains the test which the runner executes to determine whether the
-## test passed.
-##
-## A stf file contains instructions for creating files, running files and
-## comparing files and it is designed to look good in a markdown reader.
+## It runs Single Test File (stf) files. A stf file contains a test
+## which the runner executes to determine whether the test passed. A
+## stf file contains instructions for creating files, running files
+## and comparing files and it is designed to look good in a markdown
+## reader.
 ##
 ## See the runner help message (get_help) for more information about stf
 ## files, or run the nimble task "runhelp" to show the help text with
@@ -18,11 +17,60 @@ import std/options
 import std/parseopt
 import std/streams
 import std/strformat
+import std/tables
 import linebuffer
 import regexes
 import opresult
 import comparelines
-import version
+import cmdLine
+when not defined(test):
+  import version
+
+type
+  Args = object
+    ## Args holds all the command line arguments.
+    help: bool
+    leaveTempDir: bool
+    version: bool
+    filename: string
+    directory: string
+
+func `$`*(a: Args): string =
+  ## Return a string representation of an Args object.
+  result.add("arg.help: $1\n" % $a.help)
+  result.add("arg.leaveTempDir: $1\n" % $a.leaveTempDir)
+  result.add("arg.version: $1\n" % $a.version)
+  result.add("arg.filename: '$1'\n" % $a.filename)
+  result.add("arg.directory: '$1'\n" % $a.directory)
+
+func newArgs(cmlArgs: CmlArgs): Args =
+  ## Create an Args object from a CmlArgs object.
+  result.help = "help" in cmlArgs
+  result.leaveTempDir = "leaveTempDir" in cmlArgs
+  result.version = "version" in cmlArgs
+  let gotFilename = "filename" in cmlArgs
+  if gotFilename:
+    result.filename = cmlArgs["filename"][0]
+  let gotDirectory = "directory" in cmlArgs
+  if gotDirectory:
+    result.directory = cmlArgs["directory"][0]
+  if not (result.version or gotFilename or gotDirectory):
+    result.help = true
+
+proc parseCmdLine(): ArgsOrMessage =
+  ## Parse the command line and return the arguments or an error message.
+
+  # Define the supported options.
+  var supportedOptions = newSeq[CmlOption]()
+  supportedOptions.add(newCmlOption("help", 'h', cmlStopArgument))
+  supportedOptions.add(newCmlOption("version", 'v', cmlStopArgument))
+  supportedOptions.add(newCmlOption("leaveTempDir", 'l', cmlNoArgument))
+  supportedOptions.add(newCmlOption("filename", 'f', cmlArgument0or1))
+  supportedOptions.add(newCmlOption("directory", 'd', cmlArgument0or1))
+
+  # Parse the command line.
+  let cmlArgsOrMessage = cmdline(supportedOptions, collectArgs())
+  return cmlArgsOrMessage
 
 const
   switches = [
@@ -191,41 +239,43 @@ when not defined(test):
   const
     runnerHelp* = """
 # Stf Runner
-## Help for stfrunner
+
+A program to test command line programs.
 
 Run a single test file (stf) or run all stf files in a folder.
 
 The runner reads a stf file, creates multiple small files in a test
-folder, runs files then verifies the files contain the correct data.
+working folder, runs files then verifies the files contain the correct
+data.
 
 A stf file is designed to look good in a markdown reader. You can use
-the .stf or .stf.md extention.
+the .stf or .stf.md extentions.
 
 ## Usage
 
-stfrunner [-h] [-v] [-l] [-f=filename] [-d=directory]
+stfrunner [-h] [-v] [-l] [-f filename] [-d directory]
 
-* -h --help          Show this help message.
-* -v --version       Show the version number.
-* -l --leaveTempDir  Leave the temp folder.
-* -f --filename      Run the stf file.
-* -d --directory     Run the stf files (.stf or .stf.md) in the directory.
+-h --help          Show this help message.
+-v --version       Show the version number.
+-l --leaveTempDir  Leave the temp folder.
+-f --filename filename  Run the stf file.
+-d --directory dirname  Run the stf files (.stf or .stf.md) in the directory.
 
 ## Processing Steps
 
 The stf file runner processes the file tasks in the following order:
 
-* create temp folder
-* create files in the temp folder
+* create working folder
+* create files in the working folder
 * runs command type files
 * compares files
-* removes the temp folder
+* removes the working folder
 
-The temp folder is created in the same folder as the stf file using
+The working folder is created in the same folder as the stf file using
 the stf name with ".tempdir" append.
 
-Normally the temp folder is removed after running. The -l option
-leaves the folder for debugging purposes. If the temp folder exists
+Normally the working folder is removed after running. The -l option
+leaves the folder for debugging purposes. If the working folder exists
 when running, it is deleted, then recreated, then deleted when done.
 
 Runner returns 0 when all the tests pass. When running multiple stf
@@ -277,23 +327,23 @@ Example file lines:
 
 File Attributes:
 
-* **filename** - the name of the file to create.
+* **filename** -- the name of the file to create.
 
 The name is required and cannot contain spaces. The file is created in
-the temp folder.
+the working folder.
 
-* **command** — marks this file to be run.
+* **command** -- marks this file to be run.
 
-All files are created before any command runs. The file is run in the
-temp folder as the working directory. The commands are run in the
-order specified in the file.
+All files are created before any command runs. The command file is run
+in the working folder as the working directory. The commands are run
+in the order specified in the stf file.
 
-* **nonZeroReturn** — the command returns non-zero on success
+* **nonZeroReturn** -- the command returns non-zero on success
 
 Normally the runner fails when a command returns a non-zero return
 code.  With nonZeroReturn set, it fails when it returns zero.
 
-* **noLineEnding** — create the file without an ending newline.
+* **noLineEnding** -- create the file without an ending newline.
 
 ### File Block Lines
 
@@ -750,11 +800,6 @@ when not defined(test):
       if fileExists(filename):
         discard deleteFolder(tempDir)
 
-  proc runFilenameMain(args: RunArgs): int =
-    ## Run a stf file specified by a RunArgs object. Return 0 when it
-    ## passes.
-    result = runFilename(args.filename, args.leaveTempDir)
-
   proc runDirectory(dir: string, leaveTempDir: bool): int =
     ## Run all the stf files in the specified directory. Return 0 when
     ## they all pass. Show progess and count of passed and failed.
@@ -787,11 +832,7 @@ when not defined(test):
       for failedTest in failedTests:
         echo failedTest
 
-  proc runDirectoryMain(args: RunArgs): int =
-    ## Run all stf files in a directory. Return 0 when all pass.
-    result = runDirectory(args.directory, args.leaveTempDir)
-
-  proc processRunArgs(args: RunArgs): int =
+  proc processRunArgs(args: Args): int =
     ## Run what was specified on the command line. Return 0 when
     ## successful.
 
@@ -800,28 +841,31 @@ when not defined(test):
     elif args.version:
       echo stfrunnerVersion
     elif args.filename != "":
-      result = runFilenameMain(args)
+      result = runFilename(args.filename, args.leaveTempDir)
     elif args.directory != "":
-      result = runDirectoryMain(args)
+      result = runDirectory(args.directory, args.leaveTempDir)
     else:
-      echo "Missing argments, use -h for help."
+      echo "Missing argments."
       result = 1
 
-  proc main(argv: seq[string]): int =
-    ## Run stf test files. Return 0 when all the tests pass and 1 when
-    ## one or more fail.
+  proc main(cmlArgsOrMessage: ArgsOrMessage): int =
+    ## Run the specified options. Return 0 when on success.
 
     # Setup control-c monitoring so ctrl-c stops the program.
     proc controlCHandler() {.noconv.} =
       quit 0
     setControlCHook(controlCHandler)
 
+    # On error show the error message.
+    if cmlArgsOrMessage.kind == cmlMessageKind:
+      # Display the message and return.
+      echo getMessage(cmlArgsOrMessage.messageId, cmlArgsOrMessage.problemArg)
+      return 1
+
+    let cmlArgs = cmlArgsOrMessage.args
+    let args = newArgs(cmlArgs)
+
     try:
-      # Parse the command line options.
-      let argsOp = parseRunCommandLine(argv)
-      if argsOp.isMessage:
-        return 1
-      let args = argsOp.value
       result = processRunArgs(args)
     except CatchableError:
       echo "Unexpected exception: $1" % [getCurrentExceptionMsg()]
@@ -831,7 +875,10 @@ when not defined(test):
       result = 1
 
 when isMainModule:
-  let rc = main(commandLineParams())
+  let cmlArgsOrMessage = parseCmdline()
+  # echo $cmlArgsOrMessage
+
+  let rc = main(cmlArgsOrMessage)
   if rc == 0:
     quit(QuitSuccess)
   else:

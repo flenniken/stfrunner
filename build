@@ -96,7 +96,7 @@ stfrunner=/home/coder/stfrunner/bin/debian/stfrunner
 function testStf() {
   # Run the stf tests.
 
-  cmd="$stfrunner -d=stf-files"
+  cmd="$stfrunner -d stf-files"
   echo
   echo $cmd
   $cmd

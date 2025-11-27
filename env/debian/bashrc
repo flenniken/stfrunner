@@ -12,6 +12,9 @@ alias ls='ls --color=auto'
 alias ll='ls -l'
 alias b='./build'
 
+# Define the stfrunner environment variable for use inside the stf files.
+stfrunner=/home/coder/stfrunner/bin/debian/stfrunner
+
 # Use the manually built version of nim.
 export PATH=/home/coder/Nim/bin:$PATH
 

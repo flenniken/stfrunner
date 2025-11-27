@@ -337,7 +337,7 @@ func cmdLine*(supportedOptions: openArray[CmlOption],
 
     of needArgument:
       if argument.startsWith("-"):
-        # _02_, The option '$1' needs an argument.
+        # _02_, The option '$1' requires an argument.
         return newArgsOrMessage(cml_02_OptionRequiresArg, optionName)
       addArg(args, optionName, argument)
       state = start
@@ -377,7 +377,7 @@ func cmdLine*(supportedOptions: openArray[CmlOption],
       return newArgsOrMessage(args)
 
   if state == needArgument:
-    # _02_, The option '$1' needs an argument.
+    # _02_, The option '$1' requires an argument.
     return newArgsOrMessage(cml_02_OptionRequiresArg, optionName)
 
   if bareIx < bareArgumentNames.len:
@@ -392,34 +392,32 @@ func cmdLine*(supportedOptions: openArray[CmlOption],
   for option in supportedOptions:
     if option.optionType == cmlArgumentOnce:
       if not (option.long in args):
-        # _02_, The option '$1' needs an argument.
+        # _02_, The option '$1' requires an argument.
         return newArgsOrMessage(cml_02_OptionRequiresArg, option.long)
 
   result = newArgsOrMessage(args)
 
-when defined(Test) or isMainModule:
+const
+  cmlMessages*: array[low(CmlMessageId)..high(CmlMessageId), string] = [
+    #[_00_]# "Two dashes must be followed by an option name.",
+    #[_01_]# "The option '--$1' is not supported.",
+    #[_02_]# "The option '$1' requires an argument.",
+    #[_03_]# "One dash must be followed by a short option name.",
+    #[_04_]# "The short option '-$1' is not supported.",
+    #[_05_]# "The option '-$1' needs an argument; use it by itself.",
+    #[_06_]# "Duplicate short option: '-$1'.",
+    #[_07_]# "Duplicate long option: '--$1'.",
+    #[_08_]# "Use the short name '_' instead of '$1' with a bare argument.",
+    #[_09_]# "Use an alphanumeric ascii character for a short option name instead of '$1'.",
+    #[_10_]# "Missing '$1' argument.",
+    #[_11_]# "Extra bare argument.",
+    #[_12_]# "One '$1' argument is allowed.",
+  ]
+    ## Messages used by this module.
 
-  const
-    cmlMessages*: array[low(CmlMessageId)..high(CmlMessageId), string] = [
-      #[_00_]# "Two dashes must be followed by an option name.",
-      #[_01_]# "The option '--$1' is not supported.",
-      #[_02_]# "The option '$1' requires an argument.",
-      #[_03_]# "One dash must be followed by a short option name.",
-      #[_04_]# "The short option '-$1' is not supported.",
-      #[_05_]# "The option '-$1' needs an argument; use it by itself.",
-      #[_06_]# "Duplicate short option: '-$1'.",
-      #[_07_]# "Duplicate long option: '--$1'.",
-      #[_08_]# "Use the short name '_' instead of '$1' with a bare argument.",
-      #[_09_]# "Use an alphanumeric ascii character for a short option name instead of '$1'.",
-      #[_10_]# "Missing '$1' argument.",
-      #[_11_]# "Extra bare argument.",
-      #[_12_]# "One '$1' argument is allowed.",
-    ]
-      ## Messages used by this module.
-
-  func getMessage*(message: CmlMessageId, problemArg: string = ""): string =
-    ## Return a message from a message id and problem argument.
-    result = cmlMessages[message] % [problemArg]
+func getMessage*(message: CmlMessageId, problemArg: string = ""): string =
+  ## Return a message from a message id and problem argument.
+  result = cmlMessages[message] % [problemArg]
 
 when isMainModule:
 

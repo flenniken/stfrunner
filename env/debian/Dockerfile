@@ -31,6 +31,7 @@ RUN chown coder:coder /home/coder
 # Switch to coder user for following commands.
 USER coder
 WORKDIR /home/coder/
+ENV stfrunner=/home/coder/stfrunner/bin/debian/stfrunner
 
 # Get nim source for manually building nim.
 RUN git clone https://github.com/nim-lang/Nim.git

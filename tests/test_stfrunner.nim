@@ -307,91 +307,7 @@ suite "stfrunner.nim":
     removeDir(parentFolder)
     check dirExists(parentFolder) == false
 
-  test "parseRunCommandLine -h":
-    let cmdLines = ["-h", "--help"]
-    for cmdLine in cmdLines:
-      let argsOp = parseRunCommandLine(cmdLine)
-      check argsOp.isValue
-      let args = argsOp.value
-      check args.help == true
-      check args.version == false
-      check args.filename == ""
-      check args.directory == ""
-
-  test "parseRunCommandLine -l":
-    let cmdLines = ["-l", "--leaveTempDir"]
-    for cmdLine in cmdLines:
-      let argsOp = parseRunCommandLine(cmdLine)
-      check argsOp.isValue
-      let args = argsOp.value
-      check args.help == false
-      check args.version == false
-      check args.filename == ""
-      check args.directory == ""
-      check args.leaveTempDir == true
-
-  test "parseRunCommandLine -v":
-    let cmdLines = ["-v", "--version"]
-    for cmdLine in cmdLines:
-      let argsOp = parseRunCommandLine(cmdLine)
-      check argsOp.isValue
-      let args = argsOp.value
-      check args.help == false
-      check args.version == true
-      check args.leaveTempDir == false
-      check args.filename == ""
-      check args.directory == ""
-
-  test "parseRunCommandLine -f":
-    let cmdLines = ["-f=hello.stf", "--filename=hello.stf"]
-    for cmdLine in cmdLines:
-      let argsOp = parseRunCommandLine(cmdLine)
-      check argsOp.isValue
-      let args = argsOp.value
-      check args.help == false
-      check args.version == false
-      check args.filename == "hello.stf"
-      check args.directory == ""
-
-  test "parseRunCommandLine -d":
-    let cmdLines = ["-d=testfolder", "--directory=testfolder"]
-    for cmdLine in cmdLines:
-      let argsOp = parseRunCommandLine(cmdLine)
-      check argsOp.isValue
-      let args = argsOp.value
-      check args.help == false
-      check args.version == false
-      check args.filename == ""
-      check args.directory == "testfolder"
-
-  test "parseRunCommandLine -f file":
-    let cmdLines = ["-f testfolder", "--filename testfolder"]
-    for cmdLine in cmdLines:
-      let argsOp = parseRunCommandLine(cmdLine)
-      check argsOp.isMessage
-      check argsOp.message == "Missing filename. Use -f=filename"
-
-  test "parseRunCommandLine -f file -l":
-    let cmdLines = ["-l -f=name", "--filename=name --leaveTempDir"]
-    for cmdLine in cmdLines:
-      let argsOp = parseRunCommandLine(cmdLine)
-      check argsOp.isValue
-      let args = argsOp.value
-      check args.help == false
-      check args.version == false
-      check args.leaveTempDir == true
-      check args.filename == "name"
-      check args.directory == ""
-
-  test "parseRunCommandLine -d file":
-    let cmdLines = ["-d testfolder", "--directory testfolder"]
-    for cmdLine in cmdLines:
-      let argsOp = parseRunCommandLine(cmdLine)
-      check argsOp.isMessage
-      check argsOp.message == "Missing directory name. Use -d=directory"
-
   test "openNewFile":
-
     let folder = getTempDir()
     let filename = "openNewFile"
     let fileOp = openNewFile(folder, filename)
@@ -711,79 +627,12 @@ stf file, version 0.1.0
     let nc = newNameAndContent("test.txt", "")
     check testDir(filename, @[nc])
 
-  test "help example":
-    let filename = "stf-files/helpexample.stf"
-    let content = """
-stf file, version 0.1.0
-# Hello World Example
-
-# Create the script to run.
-### File cmd.sh noLastEnding command
-~~~
-../bin/statictea -t=hello.html -s=hello.json >stdout 2>stderr
-~~~
-
-# Create the hello.html template file without an ending newline.
-### File hello.html noLastEnding
-~~~
-$$ nextline
-$$ hello {name}
-~~~
-
-### File hello.json
-~~~
-{"name": "world"}
-~~~
-
-# Create a file with the expected output.
-### File stdout.expected noLastEnding
-~~~
-hello world
-~~~
-
-# No standard error output is expected, create an empty file.
-### File stderr.expected
-~~~
-~~~
-
-Compare these files.
-### Expected stdout.expected == stdout
-### Expected stderr.expected == stderr
-"""
-    let a = newExpectedLine("stdout.expected", "stdout")
-    let b = newExpectedLine("stderr.expected", "stderr")
-    let f1 = newRunFileLine("cmd.sh", command = true, noLastEnding = true)
-    let f2 = newRunFileLine("hello.html", noLastEnding = true)
-    let f3 = newRunFileLine("hello.json")
-    let f4 = newRunFileLine("stdout.expected", noLastEnding = true)
-    let f5 = newRunFileLine("stderr.expected")
-
-    let dirAndFiles = newDirAndFiles(@[a, b], @[f1, f2, f3, f4, f5])
-    let expected = opValueStr[DirAndFiles](dirAndFiles)
-    check testMakeDirAndFiles(filename, content, expected)
-    let cmdSh = """
-../bin/statictea -t=hello.html -s=hello.json >stdout 2>stderr"""
-    let d1 = newNameAndContent("cmd.sh", cmdSh)
-
-    let helloHtml = """
-$$ nextline
-$$ hello {name}"""
-    let d2 = newNameAndContent("hello.html", helloHtml)
-
-    let helloJson = """
-{"name": "world"}
-"""
-    let d3 = newNameAndContent("hello.json", helloJson)
-    let d4 = newNameAndContent("stdout.expected", "hello world")
-    let d5 = newNameAndContent("stderr.expected", "")
-    check testDir(filename, @[d1, d2, d3, d4, d5])
-
   test "runCommands":
 
     let folder = "stf-files"
     let cmdFilename = "cmd.sh"
-    let path = joinPath(folder, cmdFilename)
-    createFile(path, "echo 'hello there' >t.txt")
+    let cmdPath = joinPath(folder, cmdFilename)
+    createFile(cmdPath, "echo 'hello there' >t.txt")
 
     let r = newRunFileLine(cmdFilename, command = true, nonZeroReturn = false)
     let runFileLines = @[r]
@@ -793,8 +642,9 @@ $$ hello {name}"""
     # The current working directory is set to the stf-files folder.
     # t.txt file should appear in the folder.
     let tPath = joinPath(folder, "t.txt")
-    check not fileExists(tPath)
+    check fileExists(tPath)
+    check fileExists(cmdPath)
 
     discard tryRemoveFile(tPath)
-    discard tryRemoveFile(path)
+    discard tryRemoveFile(cmdPath)
 
