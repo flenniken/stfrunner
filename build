@@ -81,6 +81,8 @@ function testCmd() {
 
   done
 
+  rm e.txt
+
   if [[ $failed == 0 ]]; then
     echo "Success"
   else

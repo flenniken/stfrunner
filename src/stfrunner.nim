@@ -14,7 +14,6 @@ import std/strutils
 import std/os
 import std/osproc
 import std/options
-import std/parseopt
 import std/streams
 import std/strformat
 import std/tables
@@ -73,25 +72,10 @@ proc parseCmdLine(): ArgsOrMessage =
   return cmlArgsOrMessage
 
 const
-  switches = [
-    ('h', "help"),
-    ('v', "version"),
-    ('f', "filename"),
-    ('d', "directory"),
-    ('l', "leaveTempDir"),
-  ]
   runnerId* = "stf file, version 0.1.0"
     ## The first line of the stf file.
 
 type
-  RunArgs* = object
-    ## RunArgs holds the command line arguments.
-    help*: bool
-    version*: bool
-    leaveTempDir*: bool
-    filename*: string
-    directory*: string
-
   Rc* = int
     ## Rc holds a return code where 0 is success.
 
@@ -168,12 +152,6 @@ func newAnyLineIdLine*(idLine: string): AnyLine =
   ## Create a new AnyLine object for a id line.
   result = AnyLine(kind: lkIdLine, idLine: idLine)
 
-func newRunArgs*(help = false, version = false, leaveTempDir = false,
-    filename = "", directory = ""): RunArgs =
-  ## Create a new RunArgs object.
-  result = RunArgs(help: help, version: version,
-    leaveTempDir: leaveTempDir, filename: filename, directory: directory)
-
 func newRunFileLine*(filename: string, noLastEnding = false, command = false,
     nonZeroReturn = false): RunFileLine =
   ## Create a new RunFileLine object.
@@ -210,10 +188,6 @@ func `$`*(r: RunFileLine): string =
     nonZeroReturn = " nonZeroReturn"
 
   result = fmt"file {r.filename}{noLastEnding}{command}{nonZeroReturn}"
-
-proc writeErr*(message: string) =
-  ## Write a message to stderr.
-  stderr.writeLine(message)
 
 func stripLineEnding(line: string): string =
   ## Strip line endings from a string.
@@ -382,72 +356,6 @@ file lines and expected lines.
 
 """
       ## Runner help text.
-
-func letterToWord(letter: char): OpResultStr[string] =
-  ## Convert the one letter switch to its long form.
-  for (ch, word) in switches:
-    if ch == letter:
-      return opValueStr[string](word)
-  let message = "Unknown switch: $1" % $letter
-  result = opMessageStr[string](message)
-
-proc handleOption(switch: string, word: string, value: string,
-    runArgs: var RunArgs): string =
-  ## Fill in the RunArgs object with a value from the command line.
-  ## Switch is the key from the command line, either a word or a
-  ## letter.  Word is the long form of the switch. If the option
-  ## cannot be handle, return a message telling why, else return "".
-
-  if word == "filename":
-    if value == "":
-      return "Missing filename. Use -f=filename"
-    else:
-      runArgs.filename = value
-  elif word == "directory":
-    if value == "":
-      return "Missing directory name. Use -d=directory"
-    else:
-      runArgs.directory = value
-  elif word == "help":
-    runArgs.help = true
-  elif word == "version":
-    runArgs.version = true
-  elif word == "leaveTempDir":
-    runArgs.leaveTempDir = true
-  else:
-    return "Unknown switch."
-
-proc parseRunCommandLine*(argv: seq[string]): OpResultStr[RunArgs] =
-  ## Parse the command line arguments.
-
-  var args: RunArgs
-  var optParser = initOptParser(argv)
-
-  # Iterate over all arguments passed to the command line.
-  for kind, key, value in getopt(optParser):
-    case kind
-      of CmdLineKind.cmdShortOption:
-        for ix in 0..key.len-1:
-          let letter = key[ix]
-          let wordOp = letterToWord(letter)
-          if wordOp.isMessage:
-            return opMessageStr[RunArgs](wordOp.message)
-          let message = handleOption($letter, wordOp.value, value, args)
-          if message != "":
-            return opMessageStr[RunArgs](message)
-
-      of CmdLineKind.cmdLongOption:
-        let message = handleOption(key, key, value, args)
-        if message != "":
-          return opMessageStr[RunArgs](message)
-
-      of CmdLineKind.cmdArgument:
-        return opMessageStr[RunArgs]("Unknown switch: $1" % [key])
-
-      of CmdLineKind.cmdEnd:
-        discard
-
-  result = opValueStr[RunArgs](args)
 
 proc isRunFileLine*(line: string): bool =
   ## Return true when the line is a file line.
