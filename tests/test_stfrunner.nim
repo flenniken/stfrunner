@@ -35,10 +35,6 @@ proc createFile*(filename: string, content: string) =
   file.write(content)
   file.close()
 
-proc parseRunCommandLine*(cmdLine: string = ""): comparelines.OpResultStr[RunArgs] =
-  let argv = strutils.splitWhitespace(cmdLine)
-  result = parseRunCommandLine(argv)
-
 proc showExpectedLines*[T](gotLines: seq[T], expectedLines: seq[T], 
     showSame = false, stopOnFirstDiff = false): bool =
   ## Compare two sets of lines and show the differences.  If no

@@ -6,8 +6,6 @@ when defined(test):
   import std/times
   import std/options
   import std/strutils
-  # import messages
-  import args
   import linebuffer
   import comparelines
 
