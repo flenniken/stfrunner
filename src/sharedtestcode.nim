@@ -7,7 +7,12 @@ when defined(test):
   import std/options
   import std/strutils
   import linebuffer
-  import comparelines
+
+  proc echoNewline(str: string) =
+    ## Print a line to the screen and display the line endings as \n
+    ## or \r\n.
+    var newstr = str.replace("\r\n", r"\r\n")
+    echo newstr.replace("\n", r"\n")
 
   proc readXLines*(lb: var LineBuffer, maxLines: Natural = high(Natural)): seq[string] =
     ## Read lines from a LineBuffer returning line endings but don't
@@ -52,15 +57,6 @@ when defined(test):
     result = readXLines(stream, maxLineLen, bufferSize, filename, maxLines)
     stream.close
 
-  func bytesToString*(buffer: openArray[uint8|char]): string =
-    ## Create a string from bytes in a buffer. A nim string is UTF-8
-    ## incoded but it isn't validated so it is just a string of bytes.
-    if buffer.len == 0:
-      return ""
-    result = newStringOfCap(buffer.len)
-    for ix in 0 .. buffer.len-1:
-      result.add((char)buffer[ix])
-
   proc createFile*(filename: string, content: string) =
     ## Create a file with the given content.
     var file = open(filename, fmWrite)
@@ -77,60 +73,6 @@ when defined(test):
       echo "expected: " & expected
       return false
     return true
-
-  template gotExpectedResult*(got: string, expected: string, message = "") =
-    ## Compare got with expected and show the differences if any. Set
-    ## the result variable to false when there are differences, else
-    ## leave result as is.
-    ##
-    ## Example usage:
-    ##
-    ## ~~~
-    ## result = gotExpected($handled, $eHandled, "handled:")
-    ## gotExpectedResult(retLeftName, eLeftName, "left name:")
-    ## gotExpectedResult($retOperator, $eOperator, "operator:")
-    ## ~~~
-
-    if got != expected:
-      if message != "":
-        echo message
-      echo "     got: " & got
-      echo "expected: " & expected
-      result = false
-
-  func splitContent*(content: string, startLine: Natural, numLines: Natural): seq[string] =
-    ## Split the content string at newlines and return a range of the
-    ## lines.  startLine is the index of the first line.
-    let split = splitNewLines(content)
-    let endLine = startLine + numLines - 1
-    if startLine <= endLine and endLine < split.len:
-       result.add(split[startLine .. endLine])
-
-  func splitContentPick*(content: string, picks: openArray[int]): seq[string] =
-    ## Split the content then return the picked lines by line index.
-    let split = splitNewLines(content)
-    for ix in picks:
-      if ix >= 0 and ix < split.len:
-        result.add(split[ix])
-
-  proc echoNewline*(str: string) =
-    ## Print a line to the screen and display the line endings as \n
-    ## or \r\n.
-    var newstr = str.replace("\r\n", r"\r\n")
-    echo newstr.replace("\n", r"\n")
-
-  # A string stream content disappears when you close it where as a
-  # file's content still exists on disk. To work with both types of
-  # streams you need to read the content before closing and you need
-  # to set the stream position to the start to read all the content.
-
-  proc readAndClose*(stream: Stream): seq[string] =
-    ## Read and return all the lines including line endings from the
-    ## stream then close it.
-    result = readXLines(stream)
-    stream.close()
-
-
 
   proc expectedItem*[T](name: string, item: T, expectedItem: T): bool =
     ## Compare the item with the expected item and show them when
@@ -169,92 +111,3 @@ when defined(test):
             echoNewline "$1       :      got: $2" % [$ix, $items[ix]]
             echoNewline "$1       : expected: $2" % [$ix, $expectedItems[ix]]
       result = false
-
-  proc compareLogLine*(logLine: string, eLogLine: string): Option[tuple[ix: int, eix: int]] =
-    ## Compare the two log lines, skipping variable parts. If they
-    ## differ, return the position in each line where they differ. If
-    ## the expected line has a X in it, that character is skipped. If
-    ## it has a *, zero or more characters are skipped.  This simple
-    ## regex is used instead of full regex so you don't have to escape
-    ## all the special regex characters.
-
-    #      got: 2020-10-01 08:21:28.618; statictea.nim(2652); version: 0.1.0"
-    #                                                            ^
-    # expected: XXXX-XX-XX XX:XX:XX.XXX; statictea.nim(X*); verzion: X*.X*.X*"
-    #                                                          ^
-    var eix = 0
-    var ix = 0
-    let logLineLen = logLine.len
-    let eLogLineLen = eLogLine.len
-    while true:
-      if ix == logLineLen or eix == eLogLineLen:
-        if ix != logLineLen or eix != eLogLineLen:
-          return some((ix, eix))
-        return
-      var ch = logLine[ix]
-      var eCh = eLogLine[eix]
-      case eCh
-      of 'X':
-        discard
-      of '*':
-        # Get the next expected character and search for it in the
-        # current position in the log line. If there is no next
-        # expected character, we match everything to the end of the
-        # line. When the expected character is found, go back to
-        # normal matching.
-        inc(eix)
-        if eix == eLogLineLen:
-          return # Match to the end of the line.
-        eCh = eLogLine[eix]
-        var pos = find(logLine, eCh, ix)
-        if pos == -1:
-          return some((ix, eix))
-        ix = pos
-      else:
-        if ch != eCh:
-          return some((ix, eix))
-      inc(ix)
-      inc(eix)
-
-  proc compareLogLinesMatches*(logLines: seq[string], eLogLines: seq[string]): seq[int] =
-    ## Compare the two sets of log lines, skipping variable parts. If
-    ## the expected line has a X in it, that character is skipped. If
-    ## it has a *, zero or more characters are skipped.  More actual
-    ## lines may exist then expected lines. The expected lines must
-    ## appear in order but there may be other lines around them.
-    ## Return the indexes of the expected log lines that match.
-
-    var start = 0
-    for eix, eLogLine in eLogLines:
-      if start == logLines.len:
-        break
-      for ix, logLine in logLines[start .. ^1]:
-        let diffsO = compareLogLine(logLine, eLogLine)
-        if not diffsO.isSome:
-          result.add(eix)
-          start = start + ix + 1
-          break
-
-  proc showLogLinesAndExpected*(logLines: seq[string], eLogLines: seq[string], matches: seq[int]) =
-    ## Show the log lines and expected log lines. The matches list
-    ## contains the indexes of the expected log lines that match.
-    echo "-------- logLines ---------"
-    for logLine in logLines:
-      echoNewLine "   line: " & logLine
-    echo "-------- eLogLines ---------"
-    for eix, eLogLine in eLogLines:
-      if matches.contains(eix):
-        echoNewLine "  found: " & eLogLine
-      else:
-        echoNewLine "missing: " & eLogLine
-
-  proc compareLogLines*(logLines: seq[string], eLogLines: seq[string]): bool =
-    ## Compare the log lines with the expected log lines and when
-    ## different show the differences. Each expected line must match
-    ## the log lines and in the correct order, but other log lines are
-    ## ignored. Expected log lines can use X and * to skip variable
-    ## content.
-    var matches = compareLogLinesMatches(logLines, eLogLines)
-    if matches.len == eLogLines.len:
-      return true
-    showLogLinesAndExpected(logLines, eLogLines, matches)
