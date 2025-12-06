@@ -1,6 +1,8 @@
 stf file, version 0.1.0
 
-# stfrunner version number
+# Version Number
+
+Get the stfrunner version number.
 
 ### File cmd.sh command
 

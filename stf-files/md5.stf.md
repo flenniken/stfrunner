@@ -2,6 +2,8 @@ stf file, version 0.1.0
 
 # md5sum example
 
+Example stf file that runs the md5sum program.
+
 ### File cmd.sh command
 
 ~~~

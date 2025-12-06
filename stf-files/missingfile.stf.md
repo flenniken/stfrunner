@@ -1,10 +1,13 @@
 stf file, version 0.1.0
 
-# Test running with a missing file.
+# Missing File
+
+Test the error message when running with a missing file.
 
 ### File cmd.sh command nonZeroReturn
 
-# No filename specified.
+The missing.stf file doesn't exist.
+
 ~~~
 $stfrunner -f missing.stf >stdout 2>stderr
 ~~~

@@ -4,7 +4,8 @@ stf file, version 0.1.0
 
 ### File cmd.sh command nonZeroReturn
 
-# No filename specified.
+The -f option is specified but no file with it.
+
 ~~~
 $stfrunner -f >stdout 2>stderr
 ~~~

@@ -1,6 +1,8 @@
 stf file, version 0.1.0
 
-# stfrunner help message when nothing specified.
+# Help Message
+
+Test that the stfrunner help message appears when nothing is specified.
 
 ### File cmd.sh command
 

@@ -2,6 +2,9 @@ stf file, version 0.1.0
 
 # md5sum version
 
+Example stf file that tests that the md5sum program shows the version
+when nothing is specified.
+
 ### File cmd.sh command
 
 ~~~
