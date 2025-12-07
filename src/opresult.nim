@@ -1,5 +1,5 @@
 ## OpResult holds either a value or a message.  It's similar to the
-## Option type but instead of returning nothing, you return a message
+## Option type but instead of returning nothing, it returns a message
 ## that tells why you cannot return the value.
 
 type
@@ -32,5 +32,5 @@ func `$`*(opResult: OpResult): string =
   if opResult.kind == orValue:
     result = "Value: " & $opResult.value
   else:
-    result = "Message: " & $opResult.message
+    result = "Message: \"" & $opResult.message & "\""
 
