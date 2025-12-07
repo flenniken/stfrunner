@@ -13,7 +13,7 @@ $stfrunner -v >stdout 2>stderr
 ### File stdout.expected
 
 ~~~
-0.1.1
+0.1.2
 ~~~
 
 ### Expected stdout == stdout.expected
