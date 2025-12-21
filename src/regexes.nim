@@ -26,25 +26,6 @@ type
     pattern*: string
     sub*: string
 
-func newMatches*(length: Natural, start: Natural): Matches =
-  ## Create a new Matches object with no groups.
-  result = Matches(length: length, start: start)
-
-func newMatches*(length: Natural, start: Natural, group: string): Matches =
-  ## Create a new Matches object with one group.
-  var groups = @[group]
-  result = Matches(groups: groups, length: length, start: start)
-
-func newMatches*(length: Natural, start: Natural,
-    group1: string, group2: string): Matches =
-  ## Create a new Matches object with two groups.
-  var groups = @[group1, group2]
-  result = Matches(groups: groups, length: length, start: start)
-
-proc newMatches*(length: Natural, start: Natural, groups: seq[string]): Matches =
-  ## Create a Matches object with the given number of groups.
-  result = Matches(length: length, start: start, groups: groups)
-
 proc newMatches*(str: string, match: RegexMatch2): Matches =
   ## Create a Matches object from a string and a RegexMatch2 object.
 
@@ -115,17 +96,6 @@ func compilePattern*(pattern: string): Option[CompiledPattern] =
     result = some(compiled)
   except RegexError:
     result = none(CompiledPattern)
-
-func matchPattern*(str: string, pattern: string): Option[Matches] =
-  ## Match a regular expression pattern in a string.
-  let regexO = compilePattern(pattern)
-  if not regexO.isSome:
-    return
-  result = matchRegex(str, regexO.get())
-
-func newReplacement*(pattern: string, sub: string): Replacement =
-  ## Create a new Replacement object.
-  result = Replacement(pattern: pattern, sub: sub)
 
 proc replaceMany*(str: string, replacements: seq[Replacement]): Option[string] =
   ## Replace the patterns in the string with their replacements.

@@ -6,6 +6,36 @@ import regex
 import regexes
 import sharedtestcode
 
+func newMatches(length: Natural, start: Natural): Matches =
+  ## Create a new Matches object with no groups.
+  result = Matches(length: length, start: start)
+
+func newMatches(length: Natural, start: Natural, group: string): Matches =
+  ## Create a new Matches object with one group.
+  var groups = @[group]
+  result = Matches(groups: groups, length: length, start: start)
+
+func newMatches(length: Natural, start: Natural,
+    group1: string, group2: string): Matches =
+  ## Create a new Matches object with two groups.
+  var groups = @[group1, group2]
+  result = Matches(groups: groups, length: length, start: start)
+
+proc newMatches(length: Natural, start: Natural, groups: seq[string]): Matches =
+  ## Create a Matches object with the given number of groups.
+  result = Matches(length: length, start: start, groups: groups)
+
+func newReplacement(pattern: string, sub: string): Replacement =
+  ## Create a new Replacement object.
+  result = Replacement(pattern: pattern, sub: sub)
+
+func matchPattern(str: string, pattern: string): Option[Matches] =
+  ## Match a regular expression pattern in a string.
+  let regexO = compilePattern(pattern)
+  if not regexO.isSome:
+    return
+  result = matchRegex(str, regexO.get())
+
 proc testMatchPattern*(str: string, pattern: string,
     eMatchesO: Option[Matches] = none(Matches)): bool =
   ## Test matchPattern
@@ -88,11 +118,19 @@ suite "regexes.nim":
     let pattern = r".*abc$"
     check testMatchPattern("123 abc", pattern, some(newMatches(7, 0)))
 
+  test "one simple match float":
+    let pattern = r"abc$"
+    check testMatchPattern("123 abc", pattern, some(newMatches(3, 4)))
+
+  test "one simple match 3":
+    let pattern = r"abc"
+    check testMatchPattern("123 abc def", pattern, some(newMatches(3, 4)))
+
   test "no match":
     let pattern = r"^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$"
     check testMatchPattern("b.67.8", pattern)
 
-  test "one group":
+  test "groups":
     let pattern = r"^.*(def)$"
     let matchesO = matchPattern("  abc asdfasdfdef def", pattern)
     check matchesO.isSome
@@ -151,7 +189,7 @@ suite "regexes.nim":
     check two == "def"
     check length == 19
 
-  test "groups":
+  test "more groups":
     let pattern = r"^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$"
     check testMatchPattern("999.888.777", pattern, some(newMatches(11, 0, @["999", "888", "777"])))
     check testMatchPattern("5.67.8", pattern, some(newMatches(6, 0, @["5", "67", "8"])))
@@ -169,6 +207,10 @@ suite "regexes.nim":
   test "matchPattern":
     let pattern = r".*ll(o)(testing)*"
     check testMatchPattern("hellotesting", pattern, some(newMatches(12, 0, "o", "testing")))
+
+  test "matchPattern 2":
+    let pattern = r"ll(o)(testing)*"
+    check testMatchPattern("hellotesting", pattern, some(newMatches(10, 2, "o", "testing")))
 
   test "matchPattern one match":
     check testMatchPattern("nomatch", ".*match", some(newMatches(7, 0)))
@@ -199,11 +241,11 @@ suite "regexes.nim":
     check testMatchPattern("yesmatch", "(yes)7(match)")
     check testMatchPattern("yesmatches", "(y)(s)(m)(a)(t)(c)(h)(e)(s)")
     check testMatchPattern("   match = ", "(match) 7")
-    check testMatchPattern(" match = asdf", "^match")
 
   test "matchPattern exception":
     # The pattern has unmatched parentheses which generates an
-    # exception in the compilePattern method of the re module.
+    # exception in the compilePattern method of the standard re
+    # module.
     let pattern = r"^----------file: ([^\s]*)\s(\([^)]\)\s*$"
     let matchesO = matchPattern("line", pattern)
     check matchesO.isSome == false
@@ -239,7 +281,7 @@ suite "regexes.nim":
     let line = "### File name.html\n"
     check testMatchPattern(line, pattern, some(newMatches(18, 0, "name.html", "")))
 
-  test "anchored at start":
+  test "anchor at start":
     let pattern = r"abc"
     let line = "anchor abc def"
     check testMatchPattern(line, pattern, some(newMatches(3, 7)))

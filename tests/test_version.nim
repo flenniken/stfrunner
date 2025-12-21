@@ -12,7 +12,9 @@ const
 suite "version.nim":
 
   test "test version string":
-    let matchesO = matchPattern(stfrunnerVersion, versionPattern)
+    let regexO = compilePattern(versionPattern)
+    assert regexO.isSome
+    let matchesO = matchRegex(stfrunnerVersion, regexO.get())
     if not matchesO.isSome:
       echo "Invalid stfrunner version number: " & stfrunnerVersion
       fail
