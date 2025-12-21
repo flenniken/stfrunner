@@ -360,21 +360,21 @@ file lines and expected lines.
 proc isRunFileLine*(line: string): bool =
   ## Return true when the line is a file line.
   let pattern = r"^### File "
-  let matchesO = matchPattern(line, pattern, 0, 0)
+  let matchesO = matchPattern(line, pattern)
   result = matchesO.isSome
 
 proc isExpectedLine*(line: string): bool =
   ## Return true when the line is an expected line.
   let pattern = r"^### Expected "
-  let matchesO = matchPattern(line, pattern, 0, 0)
+  let matchesO = matchPattern(line, pattern)
   result = matchesO.isSome
 
 proc parseRunFileLine*(line: string): OpResultStr[RunFileLine] =
   ## Parse a file command line.
 
-  let pattern = r"^### File ([^\s]+)(.*)$"
+  let pattern = r"^### File ([^\s]+)(.*)"
 
-  let matchesO = matchPattern(line, pattern, 0, 2)
+  let matchesO = matchPattern(line, pattern)
   if not matchesO.isSome:
     return opMessageStr[RunFileLine]("Invalid file line: $1" % [line])
 
@@ -400,9 +400,9 @@ proc parseRunFileLine*(line: string): OpResultStr[RunFileLine] =
 proc parseExpectedLine*(line: string): OpResultStr[ExpectedLine] =
   ## Parse an expected line.
   # # Expected stdout.expected == stdout
-  let pattern = r"^### Expected ([^\s]+) == ([^\s]+)[\s]*$"
+  let pattern = r"^### Expected ([^\s]+) == ([^\s]+)[\s]*"
 
-  let matchesO = matchPattern(line, pattern, 0, 2)
+  let matchesO = matchPattern(line, pattern)
   if not matchesO.isSome:
     return opMessageStr[ExpectedLine]("Invalid expected line: $1" % [line])
 

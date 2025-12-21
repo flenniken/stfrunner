@@ -1,28 +1,24 @@
 ## Regular expression matching.
+##
+## Using the regex module:
+## https://nitely.github.io/nim-regex/regex/nfatype.html
 
-import std/nre
+import regex
 import std/options
 
-const
-  maxGroups = 10
-    ## The maximum number of groups supported in the matchPattern
-    ## procedure.
-
 type
-  CompiledPattern* = Regex
+  CompiledPattern* = Regex2
     ## A compiled regular expression.
 
 type
   Matches* = object
     ## Holds the result of a match.
-    ## * groups — list of matching groups
-    ## * length — length of the match
+    ## * groups — list of matching group strings
+    ## * length — total length of the match
     ## * start — where the match started
-    ## * numGroups — number of groups
     groups*: seq[string]
     length*: Natural
     start*: Natural
-    numGroups*: Natural
 
   Replacement* = object
     ## Holds the regular expression pattern and its replacement for
@@ -37,21 +33,38 @@ func newMatches*(length: Natural, start: Natural): Matches =
 func newMatches*(length: Natural, start: Natural, group: string): Matches =
   ## Create a new Matches object with one group.
   var groups = @[group]
-  result = Matches(groups: groups, length: length, start: start, numGroups: 1)
+  result = Matches(groups: groups, length: length, start: start)
 
 func newMatches*(length: Natural, start: Natural,
     group1: string, group2: string): Matches =
   ## Create a new Matches object with two groups.
   var groups = @[group1, group2]
-  result = Matches(groups: groups, length: length, start: start, numGroups: 2)
+  result = Matches(groups: groups, length: length, start: start)
 
 proc newMatches*(length: Natural, start: Natural, groups: seq[string]): Matches =
   ## Create a Matches object with the given number of groups.
-  result = Matches(length: length, start: start, groups: groups,
-                   numGroups: groups.len)
+  result = Matches(length: length, start: start, groups: groups)
+
+proc newMatches*(str: string, match: RegexMatch2): Matches =
+  ## Create a Matches object from a string and a RegexMatch2 object.
+
+  # RegexMatch2 = object
+  #   captures*: seq[Slice[int]]
+  #   namedGroups*: OrderedTable[string, int16]
+  #   boundaries*: Slice[int]
+
+  let length = match.boundaries.b - match.boundaries.a + 1
+  let start = match.boundaries.a
+  var groups: seq[string] = @[]
+
+  for s in match.captures:
+    let groupStr = str[s.a .. s.b]
+    groups.add(groupStr)
+
+  result = Matches(length: length, start: start, groups: groups)
 
 func getGroupLen*(matchesO: Option[Matches]): (string, Natural) =
-  ## Get the one group in matchesO and the match length.
+  ## Return the match and match length for the first group.
   assert(matchesO.isSome, "Not a match")
   var one: string
   let matches = matchesO.get()
@@ -72,8 +85,11 @@ func get2GroupsLen*(matchesO: Option[Matches]): (string, string, Natural) =
   result = (one, two, matches.length)
 
 func getGroups*(matchesO: Option[Matches], numGroups: Natural): seq[string] =
-  ## Return the number of groups specified. If one of the groups doesn't
-  ## exist, "" is returned for it.
+  ## Return the number of groups specified. If one of the groups
+  ## doesn't exist, "" is returned for it. 10 is the maximum number of
+  ## groups supported.
+  let maxGroups = 10
+
   assert(matchesO.isSome, "Not a match")
   let matches = matchesO.get()
   if numGroups > maxGroups:
@@ -86,56 +102,26 @@ func getGroups*(matchesO: Option[Matches], numGroups: Natural): seq[string] =
       groups.add("")
   result = groups
 
-func matchRegex*(str: string, regex: CompiledPattern, start: Natural,
-    numGroups: Natural): Option[Matches] =
-  ## Match a regular expression pattern in a string. Start is the
-  ## index in the string to start the search. NumGroups is the number
-  ## of groups in the pattern. The pattern is anchored.
-  if start >= str.len:
-    return
-  if numGroups > maxGroups:
-    return
-
-  # Use anchored matching: check if pattern matches from start position
-  if start < str.len:
-    let substr = str[start .. ^1]
-    let matchResult = match(substr, regex)
-    if matchResult.isSome:
-      let m = matchResult.get()
-      let matchStr = m.match
-      let matchLength = matchStr.len
-      if numGroups == 0:
-        result = some(newMatches(matchLength, start))
-      else:
-        var groups: seq[string]
-        for ix in 0 .. numGroups-1:
-          try:
-            groups.add(m.captures[ix])
-          except:
-            groups.add("")
-        result = some(newMatches(matchLength, start, groups))
+func matchRegex*(str: string, regex: CompiledPattern): Option[Matches] =
+  ## Find a regular expression pattern in a string.
+  var match = RegexMatch2()
+  if find(str, regex, match):
+    result = some(newMatches(str, match))
 
 func compilePattern*(pattern: string): Option[CompiledPattern] =
-  ## Compile the pattern and return a regex object.
-  ## Note: the pattern uses the anchored option.
+  ## Compile the pattern for performance.
   try:
-    let regex = re(pattern)
-    result = some(regex)
-  except CatchableError:
+    let compiled = re2(pattern)
+    result = some(compiled)
+  except RegexError:
     result = none(CompiledPattern)
 
-func matchPattern*(str: string, pattern: string,
-    start: Natural, numGroups: Natural): Option[Matches] =
-  ## Match a regular expression pattern in a string. Start is the
-  ## index in the string to start the search. NumGroups is the number
-  ## of groups in the pattern. The pattern is anchored.
-  # If pattern starts with ^ (beginning anchor) and start > 0, it cannot match
-  if pattern.len > 0 and pattern[0] == '^' and start > 0:
-    return
+func matchPattern*(str: string, pattern: string): Option[Matches] =
+  ## Match a regular expression pattern in a string.
   let regexO = compilePattern(pattern)
   if not regexO.isSome:
     return
-  result = matchRegex(str, regexO.get(), start, numGroups)
+  result = matchRegex(str, regexO.get())
 
 func newReplacement*(pattern: string, sub: string): Replacement =
   ## Create a new Replacement object.
@@ -149,6 +135,6 @@ proc replaceMany*(str: string, replacements: seq[Replacement]): Option[string] =
     let regexO = compilePattern(r.pattern)
     if not regexO.isSome:
       return
-    let regex = regexO.get()
-    resultStr = replace(resultStr, regex, r.sub)
+    let compiled = regexO.get()
+    resultStr = replace(resultStr, compiled, r.sub, limit = 0)
   result = some(resultStr)

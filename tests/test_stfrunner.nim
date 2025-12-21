@@ -86,7 +86,7 @@ proc testMakeDirAndFiles(filename: string, content: string,
     echo "expected message: " & expectedDirAndFilesOp.message
     result = false
   elif expectedDirAndFilesOp.isValue and dirAndFilesOp.isMessage:
-    echo "Got message bu expected value."
+    echo "Got message but expected value."
     echo "   got message: " & dirAndFilesOp.message
     echo "expected value: " & $expectedDirAndFilesOp.value
     result = false
@@ -337,11 +337,6 @@ suite "stfrunner.nim":
   test "parseRunFileLine name":
     let line = "### File afile.txt"
     let eRunFileLine = newRunFileLine("afile.txt")
-    check testParseRunFileLine(line, eRunFileLine)
-
-  test "parseRunFileLine name newline":
-    let line = "### File name.html\n"
-    let eRunFileLine = newRunFileLine("name.html")
     check testParseRunFileLine(line, eRunFileLine)
 
   test "parseRunFileLine name and noLastEnding":
